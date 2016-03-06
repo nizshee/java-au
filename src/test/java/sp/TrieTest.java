@@ -1,9 +1,44 @@
 package sp;
  
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+
 import static org.junit.Assert.*;
  
 public class TrieTest {
- 
+
+    @org.junit.Test
+    public void testSerialize() throws Exception {
+        TrieImpl trie = new TrieImpl();
+        TrieImpl other = new TrieImpl();
+
+        other.add("");
+        other.add("aa");
+
+        trie.add("");
+        trie.add("aa");
+
+        assertTrue(trie.equals(other));
+
+        trie.add("a");
+        trie.add("aaa");
+        trie.add("aab");
+        trie.add("aac");
+        trie.add("ab");
+
+        assertFalse(trie.equals(other));
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        trie.serialize(out);
+        InputStream in = new ByteArrayInputStream(out.toByteArray());
+        other.deserialize(in);
+
+
+        assertTrue(trie.equals(other));
+
+    }
+
     @org.junit.Test
     public void testAdd() throws Exception {
         Trie trie = new TrieImpl();

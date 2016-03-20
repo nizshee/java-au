@@ -5,6 +5,7 @@
 
 build/*
 .gradle/*
+*.iml
 
 # Package Files #
 *.jar

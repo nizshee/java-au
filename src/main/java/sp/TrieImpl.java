@@ -16,8 +16,8 @@ public class TrieImpl implements Trie, StreamSerializable {
     @Override
     public boolean add(String element) {
         Node node = root;
-        for(char c : element.toCharArray()) {
-            node = node.next(c);
+        for (char c : element.toCharArray()) {
+            node = node.getNextNodeOrCreateIfNotExists(c);
         }
         return changeLeafState(node, true);
     }
@@ -45,18 +45,14 @@ public class TrieImpl implements Trie, StreamSerializable {
         return node == null ? 0 : node.getSize();
     }
 
-    private Node findNode(String element) {
-        Node node = root;
-        for(char c : element.toCharArray()) {
-            if (!node.containsKey(c)) return null;
-            node = node.get(c);
-        }
-        return node;
-    }
-
     @Override
     public boolean equals(Object obj) {
         return obj instanceof TrieImpl && root.equals(((TrieImpl) obj).root);
+    }
+
+    @Override
+    public int hashCode() {
+        return root.hashCode();
     }
 
     @Override
@@ -68,12 +64,20 @@ public class TrieImpl implements Trie, StreamSerializable {
     @Override
     public void deserialize(InputStream in) throws IOException {
         try {
-            JSONObject obj = (JSONObject)JSONValue.parseWithException(new InputStreamReader(in));
+            JSONObject obj = (JSONObject) JSONValue.parseWithException(new InputStreamReader(in));
             root.fromJson(obj, null);
         } catch (Exception e) {
-            e.printStackTrace();
-            throw new IOException("can't parse json");
+            throw new IOException("can't parse json", e);
         }
+    }
+
+    private Node findNode(String element) {
+        Node node = root;
+        for (char c : element.toCharArray()) {
+            if (!node.containsKey(c)) return null;
+            node = node.get(c);
+        }
+        return node;
     }
 
     private boolean changeLeafState(Node node, boolean value) {
@@ -85,7 +89,7 @@ public class TrieImpl implements Trie, StreamSerializable {
             if (prev != null && prev.getSize() == 0) {
                 node.remove(prev.character);
             }
-            node.wordCount += delta;
+            node.setSize(node.getSize() + delta);
             prev = node;
         }
 
@@ -96,55 +100,66 @@ public class TrieImpl implements Trie, StreamSerializable {
 
         private int wordCount = 0;
         private boolean isLeaf = false;
-        private Character character = null;
+        private char character = '\n';
         private WeakReference<Node> parent = null;
-        private Map<Character, Node> map = new HashMap<>();
+        private Map<Character, Node> nextNodes = new HashMap<>();
 
         public static final String WORD_COUNT = "wordCount";
         public static final String CHARACTER = "character";
         public static final String IS_LEAF = "isLeaf";
         public static final String OTHER = "other";
 
-        public Node() {}
+        public Node() {
+        }
 
-        public Node(Node prev, Character c) { 
+        private Node(Node prev, char c) {
             parent = new WeakReference<>(prev);
             character = c;
         }
 
-        public Node get(Character key) { return map.get(key); }
+        public Node get(char key) {
+            return nextNodes.get(key);
+        }
 
-        public Node remove(Character key) { return map.remove(key); }
+        public Node remove(char key) {
+            return nextNodes.remove(key);
+        }
 
-        public boolean containsKey(Character key) { return map.containsKey(key); }
+        public boolean containsKey(char key) {
+            return nextNodes.containsKey(key);
+        }
 
-        public void put(Character key, Node value) { map.put(key, value); }
+        public void put(char key, Node value) {
+            nextNodes.put(key, value);
+        }
 
         @Override
         public boolean equals(Object o) {
-            if (!(o instanceof  Node)) return false;
+            if (!(o instanceof Node)) return false;
             Node other = (Node) o;
-            if (wordCount != other.wordCount) return false;
-            if (isLeaf != other.isLeaf) return false;
-            if (character != other.character) return false;
-            if (!map.keySet().equals(other.map.keySet())) return false;
-            for (Character c : map.keySet()) {
-                if (!get(c).equals(other.get(c))) return false;
-            }
-            return true;
+            return wordCount == other.wordCount &&
+                    isLeaf == other.isLeaf &&
+                    character == other.character &&
+                    nextNodes.keySet().equals(other.nextNodes.keySet()) &&
+                    nextNodes.equals(other.nextNodes);
+        }
+
+        @Override
+        public int hashCode() {
+            return nextNodes.hashCode() + (isLeaf ? 1 : 0);
         }
 
         public void fromJson(JSONObject obj, Node prev) throws Exception {
             parent = prev == null ? null : new WeakReference<>(prev);
             wordCount = ((Long) obj.get(WORD_COUNT)).intValue();
             isLeaf = (Boolean) obj.get(IS_LEAF);
-            character = obj.get(CHARACTER) == null ? null : ((String) obj.get(CHARACTER)).charAt(0);
+            character = ((String) obj.get(CHARACTER)).charAt(0);
             JSONObject other = (JSONObject) obj.get(OTHER);
-            map.clear();
+            nextNodes.clear();
             for (Object key : other.keySet()) {
                 Node node = new Node();
                 node.fromJson((JSONObject) other.get(key), this);
-                put(((String)key).charAt(0), node);
+                put(node.character, node);
             }
         }
 
@@ -153,29 +168,41 @@ public class TrieImpl implements Trie, StreamSerializable {
             JSONObject obj = new JSONObject();
             obj.put(WORD_COUNT, wordCount);
             obj.put(IS_LEAF, isLeaf);
-            obj.put(CHARACTER, character == null ? null : Character.toString(character));
+            obj.put(CHARACTER, Character.toString(character));
             JSONObject other = new JSONObject();
-            for (Character c : map.keySet()) {
-                other.put(c, get(c).toJson());
+            for (Map.Entry<Character, Node> entry : nextNodes.entrySet()) {
+                other.put(entry.getKey(), entry.getValue().toJson());
             }
             obj.put(OTHER, other);
             return obj;
         }
 
-        public Node next(Character key) {
+        public Node getNextNodeOrCreateIfNotExists(char key) {
             if (!containsKey(key)) {
                 put(key, new Node(this, key));
             }
             return get(key);
         }
 
-        public int getSize() { return wordCount; }
+        public int getSize() {
+            return wordCount;
+        }
 
-        public Node getParent() { return parent == null ? null : parent.get(); }
+        public void setSize(int count) {
+            wordCount = count;
+        }
 
-        public boolean isLeaf() { return isLeaf; }
+        public Node getParent() {
+            return parent == null ? null : parent.get();
+        }
 
-        public void setLeaf(boolean value) { isLeaf = value; }
+        public boolean isLeaf() {
+            return isLeaf;
+        }
+
+        public void setLeaf(boolean value) {
+            isLeaf = value;
+        }
 
     }
 }

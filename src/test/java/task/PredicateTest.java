@@ -20,24 +20,6 @@ public class PredicateTest {
         }
     };
 
-
-    private class Indicator extends Predicate<Object> {
-
-        private Boolean applied = false;
-
-        public Boolean wasApplied() {
-            return applied;
-        }
-
-        @Override
-        public Boolean apply(Object o) {
-            applied = true;
-            return true;
-        }
-    }
-
-    ;
-
     @org.junit.Test
     public void testApply() throws Exception {
         assertTrue(GE.apply(1));
@@ -71,6 +53,21 @@ public class PredicateTest {
     public void testAlways() throws Exception {
         assertTrue(Predicate.ALWAYS_TRUE.apply(1));
         assertFalse(Predicate.ALWAYS_FALSE.apply(true));
+    }
+
+    private class Indicator extends Predicate<Object> {
+
+        private Boolean applied = false;
+
+        public Boolean wasApplied() {
+            return applied;
+        }
+
+        @Override
+        public Boolean apply(Object o) {
+            applied = true;
+            return true;
+        }
     }
 
 }

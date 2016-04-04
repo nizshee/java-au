@@ -1,47 +1,70 @@
 package task;
 
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class PredicateTest {
 
-    public static final Predicate<Integer> ge = new Predicate<Integer>() {
+    public static final Predicate<Object> GE = new Predicate<Object>() {
         @Override
-        public Boolean apply(Integer x) {
-            return x >= 0;
+        public Boolean apply(Object x) {
+            return (Integer) x >= 0;
         }
     };
 
-    public static final Predicate<Integer> le = new Predicate<Integer>() {
+    public static final Predicate<Object> LE = new Predicate<Object>() {
         @Override
-        public Boolean apply(Integer x) {
-            return x <= 0;
+        public Boolean apply(Object x) {
+            return (Integer) x <= 0;
         }
     };
+
+
+    private class Indicator extends Predicate<Object> {
+
+        private Boolean applied = false;
+
+        public Boolean wasApplied() {
+            return applied;
+        }
+
+        @Override
+        public Boolean apply(Object o) {
+            applied = true;
+            return true;
+        }
+    }
+
+    ;
 
     @org.junit.Test
     public void testApply() throws Exception {
-        assertTrue(ge.apply(1));
-        assertFalse(le.apply(1));
+        assertTrue(GE.apply(1));
+        assertFalse(LE.apply(1));
     }
 
     @org.junit.Test
     public void testOr() throws Exception {
-        assertTrue(ge.or(le).apply(1));
-        assertTrue(le.or(ge).apply(0));
+        Indicator indicator = new Indicator();
+        assertTrue(GE.or(indicator).apply(1));
+        assertFalse(indicator.wasApplied());
+        assertTrue(LE.or(GE).apply(0));
     }
 
     @org.junit.Test
     public void testAnd() throws Exception {
-        assertTrue(ge.and(le).apply(0));
-        assertFalse(le.and(ge).apply(1));
+        assertTrue(GE.and(LE).apply(0));
+        Indicator indicator = new Indicator();
+        assertFalse(LE.and(indicator).apply(1));
+        assertFalse(indicator.wasApplied());
     }
 
     @org.junit.Test
     public void testNot() throws Exception {
-        assertTrue(ge.not().apply(-1));
-        assertFalse(ge.not().apply(0));
-        assertFalse(ge.not().apply(1));
+        assertTrue(GE.not().apply(-1));
+        assertFalse(GE.not().apply(0));
+        assertFalse(GE.not().apply(1));
     }
 
     @org.junit.Test

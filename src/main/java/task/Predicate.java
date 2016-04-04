@@ -3,10 +3,6 @@ package task;
 
 public abstract class Predicate<X> extends Function1<X, Boolean> {
 
-//    public <X1 extends X> Predicate<X1> or(Predicate<X1> other) {
-//        return null;
-//    }
-
     public Predicate<X> or(Predicate<? super X> other) {
         Predicate<X> self = this;
         return new Predicate<X>() {

@@ -6,19 +6,20 @@ import static org.junit.Assert.assertTrue;
 
 public class PredicateTest {
 
-    public static final Predicate<Object> GE = new Predicate<Object>() {
+    public static final Predicate<Integer> GE = new Predicate<Integer>() {
         @Override
-        public Boolean apply(Object x) {
-            return (Integer) x >= 0;
+        public Boolean apply(Integer x) {
+            return x >= 0;
         }
     };
 
-    public static final Predicate<Object> LE = new Predicate<Object>() {
+    public static final Predicate<Integer> LE = new Predicate<Integer>() {
         @Override
-        public Boolean apply(Object x) {
-            return (Integer) x <= 0;
+        public Boolean apply(Integer x) {
+            return x <= 0;
         }
     };
+
 
     @org.junit.Test
     public void testApply() throws Exception {

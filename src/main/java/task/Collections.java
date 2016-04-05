@@ -38,18 +38,18 @@ public class Collections {
         return takeWhile(p.not(), a);
     }
 
-    public static <X, Y> Y foldr(Function2<? super Y, ? super X, ? extends Y> f, Y base, Iterable<X> a) {
+    public static <X, Y> Y foldr(Function2<? super Y, ? super X, Y> f, Y base, Iterable<X> a) {
         return myFoldr(f, base, a.iterator());
     }
 
-    public static <X, Y> Y foldl(Function2<? super Y, ? super X, ? extends Y> f, Y base, Iterable<X> a) {
+    public static <X, Y> Y foldl(Function2<? super Y, ? super X, Y> f, Y base, Iterable<X> a) {
         for (X x : a) {
             base = f.apply(base, x);
         }
         return base;
     }
 
-    private static <X, Y> Y myFoldr(Function2<? super Y, ? super X, ? extends Y> f, Y base, Iterator<X> a) {
+    private static <X, Y> Y myFoldr(Function2<? super Y, ? super X, Y> f, Y base, Iterator<X> a) {
         if (!a.hasNext()) {
             return base;
         } else {

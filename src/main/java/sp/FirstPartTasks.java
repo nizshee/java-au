@@ -28,7 +28,6 @@ public final class FirstPartTasks {
 
     // Список альбомов, в которых есть хотя бы один трек с рейтингом более 95, отсортированный по названию
     public static List<Album> sortedFavorites(Stream<Album> albums) {
-//        return null;
         return albums.filter(album -> album.getTracks().stream().anyMatch(track -> track.getRating() > 95))
                 .sorted(Comparator.comparing(Album::getName)).collect(Collectors.toList());
     }
@@ -46,21 +45,26 @@ public final class FirstPartTasks {
 
     // Число повторяющихся альбомов в потоке
     public static long countAlbumDuplicates(Stream<Album> albums) {
-        return albums.collect(Collectors.toMap(Function.identity(), album -> 1, (a, b) -> a + b)).entrySet().stream()
-                .filter(entry -> entry.getValue() > 1).count();
+        return albums.collect(Collectors.groupingBy(Function.<Album>identity(), Collectors.<Album>counting()))
+                .entrySet().stream().filter(entry -> entry.getValue() > 1).count();
     }
 
     // Альбом, в котором максимум рейтинга минимален
     // (если в альбоме нет ни одного трека, считать, что максимум рейтинга в нем --- 0)
     public static Optional<Album> minMaxRating(Stream<Album> albums) {
         return albums.min(Comparator.comparing(album -> album.getTracks().stream()
-                .map(Track::getRating).max(Integer::compare).orElse(0)));
+                .mapToInt(Track::getRating).max().orElse(0)));
     }
 
     // Список альбомов, отсортированный по убыванию среднего рейтинга его треков (0, если треков нет)
     public static List<Album> sortByAverageRating(Stream<Album> albums) {
-        return albums.sorted(Comparator.comparing(album -> ((Album)album).getTracks().stream().map(Track::getRating)
-                .mapToInt(Integer::intValue).average().orElse(0)).reversed()).collect(Collectors.toList());
+        return albums.sorted(
+                Comparator.<Album, Double>comparing(album -> album
+                        .getTracks().stream()
+                        .mapToInt(Track::getRating)
+                        .average()
+                        .orElse(0)).reversed())
+                .collect(Collectors.toList());
     }
 
     // Произведение всех чисел потока по модулю 'modulo'

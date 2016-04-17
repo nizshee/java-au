@@ -20,7 +20,6 @@ public final class SecondPartTasks {
             try (Stream<String> stream = Files.lines(Paths.get(path))) {
                 return stream.filter(str -> str.contains(sequence)).collect(Collectors.toList()).stream();
             } catch (IOException e) {
-                e.printStackTrace();
                 return Stream.of();
             }
         }).collect(Collectors.toList());
@@ -40,7 +39,7 @@ public final class SecondPartTasks {
     // Надо вычислить, чья общая длина произведений наибольшая.
     public static String findPrinter(Map<String, List<String>> compositions) {
         return compositions.entrySet().stream().max(Comparator.comparing(entry -> entry.getValue().stream()
-                .reduce(0, (i, s) -> i + s.length(), (a, b) -> a + b))).map(Map.Entry::getKey).orElse("");
+                .mapToInt(String::length).sum())).map(Map.Entry::getKey).orElse(null);
     }
 
     // Вы крупный поставщик продуктов. Каждая торговая сеть делает вам заказ в виде Map<Товар, Количество>.

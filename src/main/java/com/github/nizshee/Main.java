@@ -2,12 +2,13 @@ package com.github.nizshee;
 
 
 import com.github.nizshee.cvs.CVS;
+import com.github.nizshee.exception.StateException;
+import com.github.nizshee.exception.WorkspaceException;
+import com.github.nizshee.frontend.Frontend;
 import com.github.nizshee.index.InMemoryIndex;
-import com.github.nizshee.index.Index;
 import com.github.nizshee.tags.InMemoryTags;
 import com.github.nizshee.tags.Tags;
 import com.github.nizshee.workspace.FileWorkspace;
-import com.github.nizshee.workspace.Workspace;
 
 import java.io.*;
 import java.nio.file.Paths;
@@ -15,8 +16,8 @@ import java.util.*;
 
 public class Main {
 
-    private final static String INDEX = "index";
-    private final static String TAGS = "tags";
+    private final static String CVS = ".cvs";
+    private final static String TAGS = ".tags";
     private final static String WORKDIR = "workdir";
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -24,41 +25,38 @@ public class Main {
 
         Paths.get(WORKDIR).toFile().mkdirs();
 
-        Workspace workspace = new FileWorkspace(WORKDIR);
-
         Tags tags = restoreTags();
-        Index index = restoreIndex();
-        CVS cvs = new CVS(workspace, index);
+        CVS cvs = restoreCVS();
 
-        String current = tags.currentHash();
-        if (current != null) {
-            cvs.change(current);
-        } else {
-            String hash = cvs.create();
-            tags.create("master", hash);
-            tags.setCurrent("master");
-            cvs.change(hash);
-        }
 
         Frontend frontend = new Frontend(tags, cvs);
         frontend.eval(args);
 
-        dumpIndex(index);
-        dumpTags(tags);
-    }
-
-
-    private static Index restoreIndex() throws IOException, ClassNotFoundException {
-        try (FileInputStream fis = new FileInputStream(INDEX)) {
-            ObjectInputStream ois = new ObjectInputStream(fis);
-            return (Index) ois.readObject();
-        } catch (FileNotFoundException ignore) {
-            return new InMemoryIndex(new HashMap<>());
+        if (cvs.current() != null) {
+            dumpTags(tags);
+            dumpCVS(cvs);
         }
     }
 
+    private static CVS restoreCVS() throws IOException, ClassNotFoundException, WorkspaceException, StateException {
+        try (FileInputStream fis = new FileInputStream(WORKDIR + "/" + CVS)) {
+            ObjectInputStream ois = new ObjectInputStream(fis);
+            return (CVS) ois.readObject();
+        } catch (FileNotFoundException ignore) {
+            return new CVS(new FileWorkspace(WORKDIR), new InMemoryIndex(new HashMap<>()),
+                    Arrays.asList(CVS, TAGS));
+        }
+    }
+
+    private static void dumpCVS(CVS cvs) throws IOException {
+        FileOutputStream fos = new FileOutputStream(WORKDIR + "/" + CVS);
+        ObjectOutputStream oos = new ObjectOutputStream(fos);
+        oos.writeObject(cvs);
+        fos.close();
+    }
+
     private static Tags restoreTags() throws IOException, ClassNotFoundException {
-        try (FileInputStream fis = new FileInputStream(TAGS)) {
+        try (FileInputStream fis = new FileInputStream(WORKDIR + "/" + TAGS)) {
             ObjectInputStream ois = new ObjectInputStream(fis);
             return (Tags) ois.readObject();
         } catch (FileNotFoundException ignore) {
@@ -66,15 +64,8 @@ public class Main {
         }
     }
 
-    private static void dumpIndex(Index index) throws IOException {
-        FileOutputStream fos = new FileOutputStream(INDEX);
-        ObjectOutputStream oos = new ObjectOutputStream(fos);
-        oos.writeObject(index);
-        fos.close();
-    }
-
     private static void dumpTags(Tags tags) throws IOException {
-        FileOutputStream fos = new FileOutputStream(TAGS);
+        FileOutputStream fos = new FileOutputStream(WORKDIR + "/" + TAGS);
         ObjectOutputStream oos = new ObjectOutputStream(fos);
         oos.writeObject(tags);
         fos.close();

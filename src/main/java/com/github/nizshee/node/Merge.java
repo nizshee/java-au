@@ -1,7 +1,7 @@
 package com.github.nizshee.node;
 
 
-import com.github.nizshee.CommitMessage;
+import com.github.nizshee.message.CommitMessage;
 import com.github.nizshee.exception.StateException;
 import com.github.nizshee.state.State;
 
@@ -33,15 +33,15 @@ public class Merge implements Node {
         State from = states.get(0);
         State with = states.get(1);
 
-        Set<String> toAdd = from.created(with);
+        Set<String> toAdd = from.removed(with);
 
-        for (String fileName: toAdd) {
+        for (String fileName : toAdd) {
             from.create(fileName, with.get(fileName));
         }
 
         Set<String> toChange = with.changed(from);
 
-        for (String fileName: toChange) {
+        for (String fileName : toChange) {
             List<String> result = new LinkedList<>();
             result.add("<<<");
             result.addAll(from.get(fileName));

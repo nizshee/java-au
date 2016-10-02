@@ -4,6 +4,7 @@ package com.github.nizshee.workspace;
 import com.github.nizshee.exception.WorkspaceException;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -11,7 +12,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class FileWorkspace implements Workspace {
+public class FileWorkspace implements Workspace, Serializable {
     private final String directoryPath;
 
     public FileWorkspace(String path) throws WorkspaceException {

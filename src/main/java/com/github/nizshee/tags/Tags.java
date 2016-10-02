@@ -10,15 +10,13 @@ public interface Tags {
 
     void create(String name, String hash) throws TagException;
 
-    String getHash(String name) throws TagException;
+    String current() throws TagException;
 
     void changeCurrent(String hash) throws TagException;
 
-    String currentName() throws TagException;
+    void setCurrent(String maybeName) throws TagException;
 
-    String currentHash() throws TagException;
-
-    void setCurrent(String hashOrName) throws TagException;
+    String getHash(String maybeName) throws TagException;
 
     void remove(String name) throws TagException;
 }

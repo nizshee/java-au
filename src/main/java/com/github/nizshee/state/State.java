@@ -5,15 +5,26 @@ import com.github.nizshee.workspace.Workspace;
 import com.github.nizshee.exception.WorkspaceException;
 import com.github.nizshee.exception.StateException;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class State {
+public class State implements Serializable {
 
     private Map<String, List<String>> files;
 
     public State() {
         files = new HashMap<>();
+    }
+
+    public State copy() {
+        State state = new State();
+        state.files = new HashMap<>(files);
+        return state;
+    }
+
+    public boolean contains(String fileName) {
+        return files.containsKey(fileName);
     }
 
     public void create(String fileName, List<String> content) throws StateException {
@@ -35,10 +46,20 @@ public class State {
         files.remove(fileName);
     }
 
+    @SuppressWarnings("StatementWithEmptyBody")
+    public void syncFile(String fileName, State that) throws StateException {
+        if (this.files.containsKey(fileName) && !that.files.containsKey(fileName)) {
+            this.files.remove(fileName);
+        } else if (!this.files.containsKey(fileName) && !that.files.containsKey(fileName)) {
+        } else {
+            this.files.put(fileName, that.files.get(fileName));
+        }
+    }
+
     public Set<String> changed(Workspace workspace) throws WorkspaceException {
         Set<String> wFiles = workspace.getFiles();
         Set<String> result = new HashSet<>();
-        for (String filename: files.keySet()) {
+        for (String filename : files.keySet()) {
             if (wFiles.contains(filename) && !workspace.get(filename).equals(files.get(filename)))
                 result.add(filename);
         }
@@ -55,8 +76,8 @@ public class State {
         return wFiles.stream().filter(fileName -> !files.keySet().contains(fileName)).collect(Collectors.toSet());
     }
 
-    public Set<String> created(State state) {
-        return state.files.keySet().stream().filter(fileName -> !files.keySet().contains(fileName))
+    public Set<String> removed(State state) {
+        return state.files.keySet().stream().filter(fileName -> !files.containsKey(fileName))
                 .collect(Collectors.toSet());
     }
 
@@ -65,20 +86,25 @@ public class State {
         return files.keySet().stream().filter(fileName -> !wFiles.contains(fileName)).collect(Collectors.toSet());
     }
 
+    public Set<String> created(State state) {
+        return files.keySet().stream()
+                .filter(fileName -> !state.files.containsKey(fileName)).collect(Collectors.toSet());
+    }
+
     public void changeWorkspace(Workspace workspace) throws WorkspaceException {
         Set<String> toCreate = removed(workspace);
         Set<String> toChange = changed(workspace);
         Set<String> toRemove = created(workspace);
 
-        for (String fileName: toCreate) {
+        for (String fileName : toCreate) {
             workspace.create(fileName, files.get(fileName));
         }
 
-        for (String fileName: toChange) {
+        for (String fileName : toChange) {
             workspace.change(fileName, files.get(fileName));
         }
 
-        for (String fileName: toRemove) {
+        for (String fileName : toRemove) {
             workspace.remove(fileName);
         }
     }

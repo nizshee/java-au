@@ -1,6 +1,7 @@
 package com.github.nizshee.cvs;
 
-import com.github.nizshee.CommitMessage;
+import com.github.nizshee.message.CommitMessage;
+import com.github.nizshee.exception.CVSException;
 import com.github.nizshee.index.InMemoryIndex;
 import com.github.nizshee.index.Index;
 import com.github.nizshee.node.Commit;
@@ -17,60 +18,255 @@ import java.util.*;
 public class CVSTest {
 
     @Test
-    public void changedTest() throws Exception {
+    public void initTest() throws Exception {
+        Index index = new InMemoryIndex(new HashMap<>());
+        Workspace workspace = new InMemoryWorkspace(new HashMap<>());
+        CVS cvs = new CVS(workspace, index, Collections.emptyList());
+        cvs.init();
+
+        assertNotNull(cvs.current());
+    }
+
+    @Test
+    public void addTest() throws Exception {
         Index index = new InMemoryIndex(getIndexMap());
         Workspace workspace = new InMemoryWorkspace(getWorkspaceDifferentMap());
-        CVS cvs = new CVS(workspace, index);
+        CVS cvs = new CVS(workspace, index, Collections.emptyList());
         cvs.change("2");
 
+        assertEquals(0, cvs.createdToCommit().size());
+        assertEquals(0, cvs.changedToCommit().size());
+        assertEquals(0, cvs.removedToCommit().size());
+        assertEquals(0, cvs.created().size());
+        assertEquals(1, cvs.changed().size());
+        assertEquals(1, cvs.removed().size());
+        assertEquals(1, cvs.notTracked().size());
+
+        cvs.add("file1");
+
+        assertEquals(0, cvs.createdToCommit().size());
+        assertEquals(0, cvs.changedToCommit().size());
+        assertEquals(1, cvs.removedToCommit().size());
+        assertEquals(0, cvs.created().size());
+        assertEquals(1, cvs.changed().size());
+        assertEquals(0, cvs.removed().size());
+        assertEquals(1, cvs.notTracked().size());
+
+        cvs.add("file2");
+
+        assertEquals(0, cvs.createdToCommit().size());
+        assertEquals(1, cvs.changedToCommit().size());
+        assertEquals(1, cvs.removedToCommit().size());
+        assertEquals(0, cvs.created().size());
+        assertEquals(0, cvs.changed().size());
+        assertEquals(0, cvs.removed().size());
+        assertEquals(1, cvs.notTracked().size());
+
+        cvs.add("file3");
+
+        assertEquals(1, cvs.createdToCommit().size());
+        assertEquals(1, cvs.changedToCommit().size());
+        assertEquals(1, cvs.removedToCommit().size());
+        assertEquals(0, cvs.created().size());
+        assertEquals(0, cvs.changed().size());
+        assertEquals(0, cvs.removed().size());
+        assertEquals(0, cvs.notTracked().size());
+    }
+
+    @Test
+    public void resetTest() throws Exception {
+        Index index = new InMemoryIndex(getIndexMap());
+        Workspace workspace = new InMemoryWorkspace(getWorkspaceDifferentMap());
+        CVS cvs = new CVS(workspace, index, Collections.emptyList());
+        cvs.change("2");
+        cvs.add("file1");
+        cvs.add("file2");
+        cvs.add("file3");
+
+        cvs.reset("file1");
+
+        assertEquals(1, cvs.createdToCommit().size());
+        assertEquals(1, cvs.changedToCommit().size());
+        assertEquals(0, cvs.removedToCommit().size());
+        assertEquals(0, cvs.created().size());
+        assertEquals(0, cvs.changed().size());
+        assertEquals(1, cvs.removed().size());
+        assertEquals(0, cvs.notTracked().size());
+
+        cvs.reset("file3");
+
+        assertEquals(0, cvs.createdToCommit().size());
+        assertEquals(1, cvs.changedToCommit().size());
+        assertEquals(0, cvs.removedToCommit().size());
+        assertEquals(0, cvs.created().size());
+        assertEquals(0, cvs.changed().size());
+        assertEquals(1, cvs.removed().size());
+        assertEquals(1, cvs.notTracked().size());
+
+        cvs.reset("file2");
+
+        assertEquals(0, cvs.createdToCommit().size());
+        assertEquals(0, cvs.changedToCommit().size());
+        assertEquals(0, cvs.removedToCommit().size());
+        assertEquals(0, cvs.created().size());
+        assertEquals(1, cvs.changed().size());
+        assertEquals(1, cvs.removed().size());
+        assertEquals(1, cvs.notTracked().size());
+    }
+
+    @Test
+    public void cleanTest() throws Exception {
+        Index index = new InMemoryIndex(getIndexMap());
+        Workspace workspace = new InMemoryWorkspace(getWorkspaceDifferentMap());
+        CVS cvs = new CVS(workspace, index, Collections.emptyList());
+        cvs.change("2");
+
+        cvs.clean();
+
+        assertEquals(new HashSet<>(Collections.singletonList("file2")), workspace.getFiles());
+
+        cvs.clean();
+
+        assertEquals(new HashSet<>(Collections.singletonList("file2")), workspace.getFiles());
+    }
+
+    @Test
+    public void rmTest() throws Exception {
+        Index index = new InMemoryIndex(getIndexMap());
+        Workspace workspace = new InMemoryWorkspace(getWorkspaceDifferentMap());
+        CVS cvs = new CVS(workspace, index, Collections.emptyList());
+        cvs.change("2");
+
+        cvs.rm("file2");
+
+        assertEquals(1, cvs.removedToCommit().size());
+
+        cvs.rm("file1");
+
+        assertEquals(2, cvs.removedToCommit().size());
+
+        cvs.rm("file3");
+
+        assertEquals(2, cvs.removedToCommit().size());
+    }
+
+    @Test
+    public void changedTest() throws Exception {
         Set<String> set = new HashSet<>();
+
+        Index index = new InMemoryIndex(getIndexMap());
+        Workspace workspace = new InMemoryWorkspace(getWorkspaceDifferentMap());
+        CVS cvs = new CVS(workspace, index, Collections.emptyList());
+        cvs.change("2");
+
+        assertEquals(set, cvs.changedToCommit());
+
+        cvs.add("file1");
+        cvs.add("file2");
+        cvs.add("file3");
         set.add("file2");
 
-        assertEquals(set, cvs.changed());
+        assertEquals(set, cvs.changedToCommit());
     }
 
     @Test
     public void removedTest() throws Exception {
+        Set<String> set = new HashSet<>();
+
         Index index = new InMemoryIndex(getIndexMap());
         Workspace workspace = new InMemoryWorkspace(getWorkspaceDifferentMap());
-        CVS cvs = new CVS(workspace, index);
+        CVS cvs = new CVS(workspace, index, Collections.emptyList());
         cvs.change("2");
 
-        Set<String> set = new HashSet<>();
+        assertEquals(set, cvs.removedToCommit());
+
+        cvs.add("file1");
+        cvs.add("file2");
+        cvs.add("file3");
         set.add("file1");
 
-        assertEquals(set, cvs.removed());
+        assertEquals(set, cvs.removedToCommit());
+        System.out.println("");
     }
 
     @Test
     public void createdTest() throws Exception {
+        Set<String> set = new HashSet<>();
+
         Index index = new InMemoryIndex(getIndexMap());
         Workspace workspace = new InMemoryWorkspace(getWorkspaceDifferentMap());
-        CVS cvs = new CVS(workspace, index);
+        CVS cvs = new CVS(workspace, index, Collections.emptyList());
         cvs.change("2");
 
+        assertEquals(set, cvs.createdToCommit());
+
+        cvs.add("file1");
+        cvs.add("file2");
+        cvs.add("file3");
+        set.add("file3");
+
+        assertEquals(set, cvs.createdToCommit());
+    }
+
+    @Test
+    public void notIndexedFilesTest() throws Exception {
         Set<String> set = new HashSet<>();
         set.add("file3");
 
-        assertEquals(set, cvs.created());
+        Index index = new InMemoryIndex(getIndexMap());
+        Workspace workspace = new InMemoryWorkspace(getWorkspaceDifferentMap());
+        CVS cvs = new CVS(workspace, index, Collections.emptyList());
+        cvs.change("2");
+
+        assertEquals(set, cvs.notTracked());
+
+        cvs.add("file1");
+        cvs.add("file2");
+
+        assertEquals(set, cvs.notTracked());
+
+        cvs.add("file3");
+
+        assertEquals(new HashSet<String>(), cvs.notTracked());
     }
 
     @Test
     public void savedTest() throws Exception {
         Index index = new InMemoryIndex(getIndexMap());
         Workspace workspace = new InMemoryWorkspace(getWorkspaceSameMap());
-        CVS cvs = new CVS(workspace, index);
+        CVS cvs = new CVS(workspace, index, Collections.emptyList());
         cvs.change("2");
 
         assertTrue(cvs.saved());
+
+        cvs.add("file1");
+        cvs.add("file2");
+
+        assertTrue(cvs.saved());
+
+        workspace = new InMemoryWorkspace(getWorkspaceDifferentMap());
+        cvs = new CVS(workspace, index, Collections.emptyList());
+        cvs.change("2");
+
+        assertTrue(cvs.saved());
+
+        cvs.add("file1");
+        cvs.add("file2");
+        cvs.add("file3");
+
+        assertFalse(cvs.saved());
     }
 
     @Test
     public void commitTest() throws Exception {
         Index index = new InMemoryIndex(getIndexMap());
         Workspace workspace = new InMemoryWorkspace(getWorkspaceDifferentMap());
-        CVS cvs = new CVS(workspace, index);
+        CVS cvs = new CVS(workspace, index, Collections.emptyList());
         cvs.change("2");
+
+        cvs.add("file1");
+        cvs.add("file2");
+        cvs.add("file3");
 
         String hash = cvs.commit("12345");
 
@@ -79,28 +275,40 @@ public class CVSTest {
         CommitMessage message = node.message(hash);
         assertEquals(message.message, "12345");
 
-        assertTrue(cvs.created().isEmpty());
-        assertTrue(cvs.changed().isEmpty());
-        assertTrue(cvs.removed().isEmpty());
+        assertTrue(cvs.createdToCommit().isEmpty());
+        assertTrue(cvs.changedToCommit().isEmpty());
+        assertTrue(cvs.removedToCommit().isEmpty());
     }
 
-    @Test
+    @Test(expected = CVSException.class)
     public void checkoutTest() throws Exception {
         Index index = new InMemoryIndex(getIndexMap());
-        Workspace workspace = new InMemoryWorkspace(getWorkspaceSameMap());
-        CVS cvs = new CVS(workspace, index);
+        Workspace workspace = new InMemoryWorkspace(getWorkspaceDifferentMap());
+        CVS cvs = new CVS(workspace, index, Collections.emptyList());
         cvs.change("2");
 
         cvs.checkout("1");
         assertTrue(workspace.getFiles().isEmpty());
+
+        cvs.checkout("2");
+        assertEquals(new HashSet<>(Arrays.asList("file1", "file2")), workspace.getFiles());
+
+        cvs.add("file1");
+        cvs.add("file2");
+        cvs.add("file3");
+
+        cvs.checkout("1");
     }
 
     @Test
     public void mergeTest() throws Exception {
         Index index = new InMemoryIndex(getIndexMap());
         Workspace workspace = new InMemoryWorkspace(getWorkspaceDifferentMap());
-        CVS cvs = new CVS(workspace, index);
+        CVS cvs = new CVS(workspace, index, Collections.emptyList());
         cvs.change("1");
+
+        cvs.add("file2");
+        cvs.add("file3");
 
         cvs.commit("321");
         cvs.mergeWith("2");
@@ -115,8 +323,10 @@ public class CVSTest {
     public void logTest() throws Exception {
         Index index = new InMemoryIndex(getIndexMap());
         Workspace workspace = new InMemoryWorkspace(getWorkspaceSameMap());
-        CVS cvs = new CVS(workspace, index);
+        CVS cvs = new CVS(workspace, index, Collections.emptyList());
         cvs.change("1");
+        cvs.add("file1");
+        cvs.add("file2");
 
         assertEquals(
                 new HashSet<>(Arrays.asList(new CommitMessage("123", "2"), new CommitMessage("init", "1"))),

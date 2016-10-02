@@ -34,7 +34,7 @@ public class InMemoryIndex implements Index, Serializable {
         Node node = getNode(hash);
         List<String> dependencies = node.getDependencies();
         List<State> states = new LinkedList<>();
-        for (String dependencyHash: dependencies) {
+        for (String dependencyHash : dependencies) {
             State state = getState(dependencyHash);
             states.add(state);
         }

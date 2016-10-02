@@ -1,6 +1,5 @@
 package com.github.nizshee.tags;
 
-import com.github.nizshee.exception.TagException;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -43,6 +42,6 @@ public class InMemoryTagsTest {
         tags.create("a", "1");
         tags.setCurrent("a");
 
-        assertEquals("a", tags.currentName());
+        assertEquals("a", tags.current());
     }
 }

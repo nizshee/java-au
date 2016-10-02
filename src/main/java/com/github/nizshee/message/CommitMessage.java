@@ -1,4 +1,4 @@
-package com.github.nizshee;
+package com.github.nizshee.message;
 
 
 public class CommitMessage {

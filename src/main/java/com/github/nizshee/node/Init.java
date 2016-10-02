@@ -1,7 +1,7 @@
 package com.github.nizshee.node;
 
 
-import com.github.nizshee.CommitMessage;
+import com.github.nizshee.message.CommitMessage;
 import com.github.nizshee.state.State;
 
 import java.util.Collections;

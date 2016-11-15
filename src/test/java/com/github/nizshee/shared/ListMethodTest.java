@@ -17,7 +17,7 @@ public class ListMethodTest {
     public void applyTest() throws Exception {
 
         @SuppressWarnings("ConstantConditions")
-        List<RemoteFile> result = method.apply(getClass().getClassLoader().getResource("test/").getPath());
+        List<RemoteFile> result = method.execute(getClass().getClassLoader().getResource("test/").getPath());
         assertEquals(Arrays.asList(
                 new RemoteFile("a", false),
                 new RemoteFile("b", false),
@@ -31,14 +31,14 @@ public class ListMethodTest {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
 
-        method.writeValue(dos, "testString1");
-        method.writeValue(dos, "testString2");
+        method.writeRequest(dos, "testString1");
+        method.writeRequest(dos, "testString2");
 
         ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
         DataInputStream dis = new DataInputStream(bis);
 
-        assertEquals("testString1", method.readValue(dis));
-        assertEquals("testString2", method.readValue(dis));
+        assertEquals("testString1", method.readRequest(dis));
+        assertEquals("testString2", method.readRequest(dis));
     }
 
     @Test
@@ -52,8 +52,8 @@ public class ListMethodTest {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
 
-        method.writeResult(dos, list1);
-        method.writeResult(dos, list2);
+        method.writeResponse(dos, list1);
+        method.writeResponse(dos, list2);
 
         ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
         DataInputStream dis = new DataInputStream(bis);

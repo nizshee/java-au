@@ -1,6 +1,7 @@
 package com.github.nizshee.shared;
 
 
+@SuppressWarnings("all")
 public class RemoteFile {
 
     public final boolean isDirectory;

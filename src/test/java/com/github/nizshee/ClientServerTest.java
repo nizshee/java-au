@@ -1,8 +1,9 @@
 package com.github.nizshee;
 
 import com.github.nizshee.client.Client;
+import com.github.nizshee.server.MethodWrapper;
 import com.github.nizshee.server.Server;
-import com.github.nizshee.server.ServerMethodWrapper;
+import com.github.nizshee.server.Handler;
 import com.github.nizshee.shared.Method;
 import org.junit.Test;
 
@@ -24,23 +25,23 @@ public class ClientServerTest {
     private final static AtomicBoolean trigger = new AtomicBoolean(false);
     public static final Method<String, String> method = new Method<String, String>() {
         @Override
-        public String apply(String s) {
+        public String execute(String s) {
             trigger.set(true);
             return s + s;
         }
 
         @Override
-        public void writeValue(DataOutputStream dos, String s) throws IOException {
+        public void writeRequest(DataOutputStream dos, String s) throws IOException {
             dos.writeUTF(s);
         }
 
         @Override
-        public String readValue(DataInputStream dis) throws IOException {
+        public String readRequest(DataInputStream dis) throws IOException {
             return dis.readUTF();
         }
 
         @Override
-        public void writeResult(DataOutputStream dos, String s) throws IOException {
+        public void writeResponse(DataOutputStream dos, String s) throws IOException {
             dos.writeUTF(s);
         }
 
@@ -49,10 +50,10 @@ public class ClientServerTest {
             return dis.readUTF();
         }
     };
-    private static final Map<Integer, ServerMethodWrapper> handlers;
+    private static final Map<Integer, Handler> handlers;
     static {
         handlers = new HashMap<>();
-        handlers.put(code, new ServerMethodWrapper(method));
+        handlers.put(code, new MethodWrapper(method));
     }
 
     @Test
@@ -62,7 +63,7 @@ public class ClientServerTest {
         Thread.sleep(500);
         Client client = new Client("localhost", 8080);
         Socket socket = new Socket("localhost", 8080);
-        String result = Client.getValue(socket, code, method, "abcd");
+        String result = Method.getValue(socket, code, method, "abcd");
         assertEquals("abcdabcd", result);
         socket.close();
         server.stop();

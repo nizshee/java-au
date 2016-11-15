@@ -13,15 +13,18 @@ public class ClientMain {
         if (args.length == 2 && args[0].equals("list")) {
             List<RemoteFile> list = client.getList(args[1]);
             for (RemoteFile file: list) {
-                System.out.println(file);
+                System.out.print(file + " ");
+                if (file.isDirectory) {
+                    System.out.println("<dir>");
+                } else {
+                    System.out.println();
+                }
             }
         } else if (args.length == 2 && args[0].equals("get")) {
-            byte[] bytes = client.getFile(args[1]);
-            System.out.println(bytes.length);
-            for (byte b: bytes) {
-                System.out.print(b);
-            }
-            System.out.println();
+            client.getFile(args[1]);
+            System.out.println("file downloaded");
+        } else {
+            System.out.println("usage: list <path> | get <file>");
         }
     }
 }

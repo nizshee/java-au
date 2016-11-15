@@ -1,6 +1,9 @@
 package com.github.nizshee.server;
 
 
+import com.github.nizshee.shared.ServerNotRunningException;
+import com.github.nizshee.shared.ServerRunningException;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -18,30 +21,35 @@ public class Server {
         this.port = port;
     }
 
-    public void start(Map<Integer, ServerMethodWrapper> handlers) throws IOException {
-        if (socket != null) throw new IOException("Server already running.");
+    public synchronized void start(Map<Integer, Handler> handlers) throws IOException, ServerRunningException {
+        if (socket != null) throw new ServerRunningException();
         socket = new ServerSocket(port, 50, host);
         Thread thread = new Thread(new ServerRunnable(socket, handlers));
         thread.start();
     }
 
-    public void startSync(Map<Integer, ServerMethodWrapper> handlers) throws IOException {
-        if (socket != null) throw new IOException("Server already running.");
-        socket = new ServerSocket(port, 50, host);
+    @SuppressWarnings("all")
+    public void startSync(Map<Integer, Handler> handlers)
+            throws IOException, ServerRunningException {
+        synchronized (this) {
+            if (socket != null) throw new ServerRunningException();
+            socket = new ServerSocket(port, 50, host);
+        }
         (new ServerRunnable(socket, handlers)).run();
     }
 
-    public void stop() throws IOException {
+    public synchronized void stop() throws IOException, ServerNotRunningException {
+        if (socket == null) throw new ServerNotRunningException();
         socket.close();
         socket = null;
     }
 
-    private class ServerRunnable implements Runnable {
+    private static class ServerRunnable implements Runnable {
 
         private final ServerSocket serverSocket;
-        private final Map<Integer, ServerMethodWrapper> handlers;
+        private final Map<Integer, Handler> handlers;
 
-        ServerRunnable(ServerSocket serverSocket, Map<Integer, ServerMethodWrapper> handlers) {
+        ServerRunnable(ServerSocket serverSocket, Map<Integer, Handler> handlers) {
             this.serverSocket = serverSocket;
             this.handlers = handlers;
         }
@@ -52,19 +60,22 @@ public class Server {
                 //noinspection InfiniteLoopStatement
                 while (true) {
                     Socket socket = serverSocket.accept();
-                    DataInputStream dis = new DataInputStream(socket.getInputStream());
-                    DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
-                    Integer key = dis.readInt();
-                    if (handlers.containsKey(key)) {
-                        ServerMethodWrapper wrapper = handlers.get(key);
-                        wrapper.handle(dis, dos);
+                    try {
+                        DataInputStream dis = new DataInputStream(socket.getInputStream());
+                        DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+                        Integer key = dis.readInt();
+                        if (handlers.containsKey(key)) {
+                            Handler wrapper = handlers.get(key);
+                            wrapper.handle(dis, dos);
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    } finally {
+                        socket.close();
                     }
-                    socket.close();
                 }
-            } catch (SocketException ignore) {
-                System.out.println("Server stopped.");
             } catch (IOException e) {
-                System.err.println("Can't accept connection.");
+                System.err.println(e.getMessage());
             }
         }
     }

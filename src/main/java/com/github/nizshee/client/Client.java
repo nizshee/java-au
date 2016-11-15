@@ -1,17 +1,15 @@
 package com.github.nizshee.client;
 
 
-import com.github.nizshee.shared.GetMethod;
 import com.github.nizshee.shared.ListMethod;
 import com.github.nizshee.shared.Method;
 import com.github.nizshee.shared.RemoteFile;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 import java.util.List;
 
+@SuppressWarnings("all")
 public class Client {
 
     private final String host;
@@ -22,20 +20,29 @@ public class Client {
         this.port = port;
     }
 
-    List<RemoteFile> getList(String name) throws IOException {
-        return getValue(new Socket(host, port), 1, new ListMethod(), name);
+    public List<RemoteFile> getList(String name) throws IOException {
+        return Method.getValue(new Socket(host, port), 1, new ListMethod(), name);
     }
 
-    byte[] getFile(String name) throws IOException {
-        return getValue(new Socket(host, port), 2, new GetMethod(), name);
-    }
-
-    public static <Value, Result> Result getValue(Socket socket, int code, Method<Value, Result> method, Value value)
-            throws IOException {
-        DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
-        DataInputStream dis = new DataInputStream(socket.getInputStream());
-        dos.writeInt(code);
-        method.writeValue(dos, value);
-        return method.readResult(dis);
+    public void getFile(String name) throws IOException {
+        try (Socket socket = new Socket(host, port)) {
+            DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+            dos.writeInt(2);
+            dos.writeUTF(name);
+            DataInputStream dis = new DataInputStream(socket.getInputStream());
+            long size = dis.readLong();
+            byte[] buffer = new byte[1024];
+            File file = new File(name);
+            try (FileOutputStream fos = new FileOutputStream(file)) {
+                long total = 0;
+                int partSize = 0;
+                while (partSize != -1 && total < size) {
+                    fos.write(buffer, 0, (int) Math.min(size - total, partSize));
+                    total += partSize;
+                    partSize = dis.read(buffer);
+                }
+                if (total != size) throw new IOException("Not enough bytes");
+            }
+        }
     }
 }

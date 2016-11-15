@@ -5,7 +5,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -13,7 +12,7 @@ import java.util.*;
 public class ListMethod implements Method<String, List<RemoteFile>> {
 
     @Override
-    public List<RemoteFile> apply(String name) {
+    public List<RemoteFile> execute(String name) {
         Path dir = Paths.get(name);
         File[] files = dir.toFile().listFiles();
         if (files == null) return Collections.emptyList();
@@ -25,17 +24,17 @@ public class ListMethod implements Method<String, List<RemoteFile>> {
     }
 
     @Override
-    public void writeValue(DataOutputStream dos, String s) throws IOException {
+    public void writeRequest(DataOutputStream dos, String s) throws IOException {
         dos.writeUTF(s);
     }
 
     @Override
-    public String readValue(DataInputStream dis) throws IOException {
+    public String readRequest(DataInputStream dis) throws IOException {
         return dis.readUTF();
     }
 
     @Override
-    public void writeResult(DataOutputStream dos, List<RemoteFile> remoteFiles) throws IOException {
+    public void writeResponse(DataOutputStream dos, List<RemoteFile> remoteFiles) throws IOException {
         dos.writeInt(remoteFiles.size());
         for (RemoteFile file: remoteFiles) {
             dos.writeUTF(file.name);

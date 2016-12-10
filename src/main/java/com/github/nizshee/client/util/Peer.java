@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 
 @SuppressWarnings("all")
@@ -23,7 +24,7 @@ public class Peer {
         this.client = client;
     }
 
-    public void resolve(int identifier, Set<Integer> toDownload) {
+    public void resolve(int identifier, Set<Integer> toDownload, Function<FilePart, Void> onComplete) {
         if (!parts.containsKey(identifier)) {
             parts.put(identifier, new HashSet<>());
             try {
@@ -34,6 +35,7 @@ public class Peer {
                         FilePart fp = new FilePart(identifier, part);
                         try {
                             connection.add(ClientRegistry.GETW, fp, bytes -> {
+                                onComplete.apply(fp);
                                 client.put(fp, bytes);
                                 return null;
                             });

@@ -57,6 +57,7 @@ public class ClientKeeperImpl implements ClientKeeper, Serializable {
     public void upload(FileDescriptor item) {
         info.put(item.id, item);
         downloaded.put(item.id, IntStream.range(0, partCount(item.size)).mapToObj(i -> i).collect(Collectors.toSet()));
+        toDownload.put(item.id, new HashSet<>());
     }
 
     public void put(FilePart filePart, byte[] bytes) {

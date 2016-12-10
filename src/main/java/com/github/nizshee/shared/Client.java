@@ -11,7 +11,6 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
 
 public class Client {
 
@@ -32,8 +31,8 @@ public class Client {
     }
 
     public void disconnect() throws IOException {
-        selector.close();
-        socketChannel.close();
+        if (selector != null) selector.close();
+        if (socketChannel != null) socketChannel.close();
 
         isRunning = false;
         context = null;
@@ -42,16 +41,16 @@ public class Client {
     }
 
     public void write(byte[] bytes) throws IOException {
-        if (!isRunning) throw new IOException("Client not connected.");
+        if (!isRunning) throw new IOException("TorrentClient not connected.");
         context.write(bytes);
     }
 
-    public List<byte[]> runNow() throws IOException {
-        if (!isRunning) throw new IOException("Client not connected.");
+    public LinkedList<byte[]> runNow() throws IOException {
+        if (!isRunning) throw new IOException("TorrentClient not connected.");
 
         selector.selectNow();
         final Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
-        List<byte[]> result = new LinkedList<>();
+        LinkedList<byte[]> result = new LinkedList<>();
 
         while (iterator.hasNext()) {
             final SelectionKey key = iterator.next();

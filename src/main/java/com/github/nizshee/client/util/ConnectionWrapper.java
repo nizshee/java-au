@@ -7,7 +7,6 @@ import com.github.nizshee.shared.procedure.ProcedureWrapper;
 
 import java.io.IOException;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.function.Function;
 
 public class ConnectionWrapper {
@@ -45,10 +44,10 @@ public class ConnectionWrapper {
         if (!isWaiting && !data.isEmpty()) {
             client.write(data.pollFirst());
         }
-        List<byte[]> d = client.runNow();
-        if (!d.isEmpty()) {
+        LinkedList<byte[]> d = client.runNow();
+        while (!d.isEmpty()) {
             Function<byte[], Void> callback = callbacks.pollFirst();
-            callback.apply(d.get(0));
+            callback.apply(d.pollFirst());
         }
     }
 

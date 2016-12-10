@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.*;
+import java.util.function.Function;
 
 
 /**
@@ -22,6 +23,11 @@ public class Downloader {
     private List<FileDescriptor> list = new LinkedList<>();
     private boolean isClear = true;
     private Map<ClientItem, Peer> peers = new HashMap<>();
+    private final Function<FilePart, Void> onComplete;
+
+    public Downloader(Function<FilePart, Void> onComplete) {
+        this.onComplete = onComplete;
+    }
 
 
     public void runNow(ClientKeeperImpl client, ConnectionWrapper server) {
@@ -63,7 +69,7 @@ public class Downloader {
                                 client1.connect(new InetSocketAddress(InetAddress.getByAddress(ip), item.port));
                                 ConnectionWrapper wrapper = new ConnectionWrapper(client1);
                                 Peer peer = new Peer(client, wrapper);
-                                peer.resolve(id, client.getToDownload().get(id));
+                                peer.resolve(id, client.getToDownload().get(id), onComplete);
                                 peers.put(item, peer);
                             } catch (Exception e) {
                                 e.printStackTrace();
